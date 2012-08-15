@@ -1316,11 +1316,32 @@ class tabengine (ibus.EngineBase):
             self._refresh_properties ()
             self._update_ui ()
             return res
-        # process commit to preedit    
-        if self._match_hotkey (key, keysyms.Shift_R, modifier.SHIFT_MASK + modifier.RELEASE_MASK) or self._match_hotkey (key, keysyms.Shift_L, modifier.SHIFT_MASK + modifier.RELEASE_MASK):
-            res = self._editor.l_shift ()
-            self._update_ui ()
-            return res
+        # process commit to preedit
+        shift_key = 0
+        if self._match_hotkey (key, keysyms.Shift_L, modifier.SHIFT_MASK + modifier.RELEASE_MASK):
+            shift_key = 1
+        elif self._match_hotkey (key, keysyms.Shift_R, modifier.SHIFT_MASK + modifier.RELEASE_MASK):
+            shift_key = 2
+            
+        if shift_key > 0:
+            if self._editor._candidates[0]:
+                input_keys = self._editor.get_all_input_strings ()
+                res = self._editor.number (shift_key)
+                if res:
+                    o_py = self._editor._py_mode
+                    commit_string = self._editor.get_preedit_strings ()
+                    self.commit_string (commit_string)
+                    #self.add_string_len(commit_string)
+                    if o_py != self._editor._py_mode:
+                        self._refresh_properties ()
+                        self._update_ui ()
+                    # modify freq info
+                    self.db.check_phrase (commit_string, input_keys)
+                return True
+            else:
+                res = self._editor.l_shift ()
+                self._update_ui ()
+                return res
         
         # Match single char mode switch hotkey
         if self._match_hotkey (key, keysyms.comma, modifier.CONTROL_MASK):
